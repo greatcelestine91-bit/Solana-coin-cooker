@@ -1,4 +1,4 @@
- import os
+import os
 import json
 from solana.rpc.api import Client
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
