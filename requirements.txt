@@ -1,4 +1,0 @@
-python-telegram-bot==20.3
-solana==0.25.0
-httpx==0.24.1
-construct-typing==0.5.2
