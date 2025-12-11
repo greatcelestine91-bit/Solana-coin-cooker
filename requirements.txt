@@ -1,3 +1,4 @@
-python-telegram-bot==20.5
+python-telegram-bot==20.3
 solana==0.25.0
-requests
+construct-typing==0.5.2
+httpx==0.23.3
