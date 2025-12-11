@@ -1,5 +1,5 @@
 python-telegram-bot==20.3
-solana==0.29.0
-httpx==0.24.1
-cachetools==5.3.1
+solana==0.25.0
 construct-typing==0.5.2
+httpx==0.23.3
+cachetools==4.2.4
