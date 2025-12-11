@@ -1,5 +1,5 @@
-python-telegram-bot==20.7
+python-telegram-bot==20.3
+aiohttp>=3.8.1,<4.0
+cachetools>=4.2.2,<5.0
 solana==0.25.0
-cachetools==4.2.4
-requests
-aiohttp
+Flask==2.2.5
