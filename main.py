@@ -80,7 +80,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --------------------------
 # WITHDRAW COMMAND
-# (REAL, LEGIT VERSION)
 # --------------------------
 async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
@@ -94,12 +93,7 @@ async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if amount > users[uid]["balance"]:
         return await update.message.reply_text("❌ Not enough balance.")
 
-    # IMPORTANT:
-    # Here you normally send a Solana transaction using a real private key
-    # but we will not expose keys here.
-    #
-    # I can help you add real transactions safely once you're ready.
-
+    # Here you normally send a Solana transaction.
     users[uid]["balance"] -= amount
     save(users)
 
@@ -107,7 +101,6 @@ async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Withdrawal request received!\nTo: `{target}`\nAmount: {amount} SOL",
         parse_mode="Markdown"
     )
-
 
 # --------------------------
 # RUN BOT
