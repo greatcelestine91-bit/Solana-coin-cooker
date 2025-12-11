@@ -1,3 +1,6 @@
 python-telegram-bot==20.7
 solana==0.30.2
+anchorpy==0.16.1
+base58
 requests
+httpx==0.23.0
