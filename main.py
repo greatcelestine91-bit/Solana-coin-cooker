@@ -3,7 +3,7 @@
 from keep_alive import keep_alive
 keep_alive()   # Start the uptime webserver
 
-# ---------------- IMPORTS -------------------
+# -------------------- IMPORTS --------------------
 import os
 import json
 import time
@@ -11,13 +11,15 @@ import logging
 import uuid
 from typing import Dict, Any, List
 
+# Solana + Solders updated imports
 from solana.rpc.api import Client
-from solana.keypair import Keypair
-from solana.publickey import PublicKey
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
 from solana.transaction import Transaction
 from solana.system_program import TransferParams, transfer
 
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
+# Telegram imports
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
