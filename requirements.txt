@@ -1,5 +1,7 @@
 python-telegram-bot==20.7
-solana==0.25.0
-Flask==2.3.2
+solana==0.29.0
+httpx==0.25.2
+construct-typing==0.5.2
+cachetools>=4.2.2,<5
+Pillow>=9.0
 requests
-Pillow>=9.0.0
