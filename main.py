@@ -33,8 +33,8 @@ log = logging.getLogger(__name__)
 RPC_URL = os.getenv("RPC_URL", "https://api.mainnet-beta.solana.com")
 SOLANA_CLIENT = Client(RPC_URL)
 
-RAW_PRIVATE_KEY = os.getenv("SOLANA_PRIVATE_KEY_JSON", "")  # JSON array of ints, optional
-FUNDING_WALLET_ADDRESS = os.getenv("FUNDING_WALLET_ADDRESS", "")  # optional public address
+RAW_PRIVATE_KEY = os.getenv("4irqoF6gYcSWwYsHbnNScT9r2ZGi5sZfxv7EsHHHJfXLxgfxfhMikL9odsZypAYvqCnAWfyvqHQMhsQVk7xTpmgk", "")  # JSON array of ints, optional
+FUNDING_WALLET_ADDRESS = os.getenv("H5v457ZXQKcPivrtrA4aaQyQU8WCGxyrQRZFSCCTLRR2nu", "")  # optional public address
 REAL_FAUCET_ENABLED = os.getenv("REAL_FAUCET_ENABLED", "false").lower() in ("1", "true", "yes")
 
 BOT_TOKEN = os.getenv("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
