@@ -1,5 +1,9 @@
-# main.py
-# main.py
+# ---------------- KEEP ALIVE ----------------
+# This MUST stay at the very TOP before ANY imports
+from keep_alive import keep_alive
+keep_alive()   # Start the uptime webserver
+
+# ---------------- IMPORTS -------------------
 import os
 import json
 import time
@@ -33,26 +37,23 @@ RAW_PRIVATE_KEY = os.getenv("SOLANA_PRIVATE_KEY_JSON", "")  # JSON array of ints
 FUNDING_WALLET_ADDRESS = os.getenv("FUNDING_WALLET_ADDRESS", "")  # optional public address
 REAL_FAUCET_ENABLED = os.getenv("REAL_FAUCET_ENABLED", "false").lower() in ("1", "true", "yes")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_IDS_RAW = os.getenv("ADMIN_IDS", "")  # comma separated numeric Telegram user IDs
+BOT_TOKEN = os.getenv("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
+ADMIN_IDS_RAW = os.getenv("6694858410", "")  # comma separated numeric Telegram user IDs
 ADMIN_IDS: List[str] = [x.strip() for x in ADMIN_IDS_RAW.split(",") if x.strip()]
 
-# informational contact and fee address (as requested; informational only)
 ADMIN_CONTACT = "09057542461"
 NETWORK_FEE_ADDRESS = "H5v457ZXQKcPivrtrA4aaQyQU8WCGxyrQRZFSCCTLRR2"
 
-# storage file
 DATA_FILE = "users.json"
 
-# faucet / earnings / timings
 POINTS_PER_CLAIM = 10
 REAL_FAUCET_AMOUNT_SOL = 0.001
 
-POINTS_COOLDOWN = 60          # seconds between manual point claims
-REAL_FAUCET_COOLDOWN = 3600   # seconds between manual real faucet claims
+POINTS_COOLDOWN = 60
+REAL_FAUCET_COOLDOWN = 3600
 
-AUTO_EARN_POINTS = 50         # <<-- user choice: 50 points per day
-AUTO_EARN_INTERVAL = 86400    # 24 hours in seconds
+AUTO_EARN_POINTS = 50
+AUTO_EARN_INTERVAL = 86400  # 24 hours
 
 # ---------------- db helpers ----------------
 def load_data() -> Dict[str, Any]:
@@ -70,7 +71,7 @@ def load_data() -> Dict[str, Any]:
 def save_data(d: Dict[str, Any]):
     json.dump(d, open(DATA_FILE, "w"), indent=2)
 
-db = load_data()  # structure: { "users": { uid: {...} }, "withdrawals": [ ... ] }
+db = load_data()
 
 def ensure_user(uid: str):
     if uid not in db["users"]:
@@ -88,7 +89,7 @@ def ensure_user(uid: str):
 def is_admin(uid: str) -> bool:
     return str(uid) in ADMIN_IDS
 
-# ---------------- funding keypair (optional) ----------------
+# ---------------- funding keypair ----------------
 FUNDING_KEYPAIR = None
 if RAW_PRIVATE_KEY:
     try:
@@ -98,7 +99,7 @@ if RAW_PRIVATE_KEY:
         FUNDING_WALLET_ADDRESS = str(FUNDING_KEYPAIR.public_key)
         log.info("Loaded funding keypair for address %s", FUNDING_WALLET_ADDRESS)
     except Exception as e:
-        log.error("Failed to load SOL private key from env: %s", e)
+        log.error("Failed to load SOL private key: %s", e)
         FUNDING_KEYPAIR = None
         REAL_FAUCET_ENABLED = False
 
@@ -126,7 +127,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ensure_user(uid)
     await query.answer()
 
-    # Account view
     if query.data == "account":
         u = db["users"][uid]
         text = (
@@ -140,158 +140,109 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text, parse_mode="HTML")
         return
 
-    # Buy SOL (info only)
     if query.data == "buy_sol":
         await query.edit_message_text(
             "📞 <b>Buy SOLANA</b>\n\n"
-            "To buy SOL safely, contact admin:\n"
-            f"📱 <b>{ADMIN_CONTACT}</b>\n\n"
-            "Admin will guide you through the payment safely.",
+            f"Contact Admin: {ADMIN_CONTACT}",
             parse_mode="HTML"
         )
         return
 
-    # Fee info (info only)
     if query.data == "fee_info":
         await query.edit_message_text(
-            "💸 <b>Network Fee Information (Informational)</b>\n\n"
-            "If a network fee is required, you may use the address below (informational only):\n\n"
-            f"<code>{NETWORK_FEE_ADDRESS}</code>\n\n"
-            "⚠️ Always confirm with admin before sending funds.",
+            "💸 Network Fee (informational):\n"
+            f"<code>{NETWORK_FEE_ADDRESS}</code>",
             parse_mode="HTML"
         )
         return
 
-    # Claim points faucet (manual)
     if query.data == "claim_points":
         now = int(time.time())
         last = db["users"][uid].get("last_points", 0)
         if now - last < POINTS_COOLDOWN:
-            await query.edit_message_text(f"⏳ Wait {POINTS_COOLDOWN - (now-last)}s before claiming again.")
-            return
+            return await query.edit_message_text(f"⏳ Wait {POINTS_COOLDOWN - (now-last)} seconds.")
         db["users"][uid]["points"] += POINTS_PER_CLAIM
         db["users"][uid]["last_points"] = now
         save_data(db)
-        await query.edit_message_text(f"✅ You received {POINTS_PER_CLAIM} points. Total: {db['users'][uid]['points']}")
-        return
+        return await query.edit_message_text(f"✅ +{POINTS_PER_CLAIM} points added!")
 
-    # Auto-earn daily (50 points)
     if query.data == "auto_earn":
         now = int(time.time())
         next_time = db["users"][uid].get("next_auto_earn", 0)
         if now < next_time:
-            remaining = next_time - now
-            hours = remaining // 3600
-            minutes = (remaining % 3600) // 60
-            seconds = remaining % 60
-            await query.edit_message_text(
-                f"⏳ You already claimed your daily reward.\nNext reward in {hours}h {minutes}m {seconds}s."
-            )
-            return
+            return await query.edit_message_text("⏳ You've already claimed your daily auto-earn.")
         db["users"][uid]["points"] += AUTO_EARN_POINTS
         db["users"][uid]["next_auto_earn"] = now + AUTO_EARN_INTERVAL
         save_data(db)
-        await query.edit_message_text(
-            f"🎉 Daily Auto-Earn claimed! You received {AUTO_EARN_POINTS} points."
-        )
-        return
+        return await query.edit_message_text(f"🎉 Daily {AUTO_EARN_POINTS} points added!")
 
-    # Claim real faucet (informational / actionable if enabled)
-    if query.data == "claim_real":
-        if not REAL_FAUCET_ENABLED or FUNDING_KEYPAIR is None:
-            await query.edit_message_text("⚠️ Real faucet is not enabled on this bot.")
-            return
-        now = int(time.time())
-        last = db["users"][uid].get("last_real", 0)
-        if now - last < REAL_FAUCET_COOLDOWN:
-            await query.edit_message_text(f"⏳ Wait {REAL_FAUCET_COOLDOWN - (now-last)}s before requesting SOL again.")
-            return
-        await query.edit_message_text("Send /sendme <YOUR_SOLANA_ADDRESS> to receive SOL (if enabled).")
-        return
-
-    # Withdraw (instructions)
     if query.data == "withdraw":
-        await query.edit_message_text(
-            "To request withdrawal:\n"
-            "- Points -> /withdraw_points <amount>\n"
-            "- SOL -> /withdraw_sol <amount> <address>\n\n"
-            "Requests become pending and admin must approve."
+        return await query.edit_message_text(
+            "Withdraw Options:\n"
+            "/withdraw_points <amount>\n"
+            "/withdraw_sol <amount> <address>"
         )
-        return
 
-    # Referral info
     if query.data == "referral":
         ref_code = uid
-        bot_username = context.bot.username or "<bot>"
-        invite_link = f"https://t.me/{bot_username}?start={ref_code}"
-        await query.edit_message_text(f"Share this link to get referrals:\n{invite_link}\nYou get points when someone uses it.")
-        return
+        bot_username = context.bot.username
+        link = f"https://t.me/{bot_username}?start={ref_code}"
+        return await query.edit_message_text(f"Your referral link:\n{link}")
 
-    # Solana tools submenu
     if query.data == "sol_tools":
         kb2 = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Check On-Chain SOL Balance", callback_data="balance_onchain"),
-             InlineKeyboardButton("Show Funding Wallet (if set)", callback_data="show_fund")],
-            [InlineKeyboardButton("Back", callback_data="back")]
+            [InlineKeyboardButton("Check SOL Balance", callback_data="balance_onchain")],
+            [InlineKeyboardButton("Funding Wallet", callback_data="show_fund")],
         ])
-        await query.edit_message_text("Solana Tools:", reply_markup=kb2)
-        return
+        return await query.edit_message_text("Solana Tools:", reply_markup=kb2)
 
     if query.data == "balance_onchain":
-        await query.edit_message_text("Use /balance <SOL_ADDRESS> to check on-chain balance.")
-        return
+        return await query.edit_message_text("Use /balance <address>")
 
     if query.data == "show_fund":
         if FUNDING_WALLET_ADDRESS:
-            await query.edit_message_text(f"Funding wallet address: <code>{FUNDING_WALLET_ADDRESS}</code>", parse_mode="HTML")
-        else:
-            await query.edit_message_text("Funding wallet is not configured.")
-        return
+            return await query.edit_message_text(f"<code>{FUNDING_WALLET_ADDRESS}</code>", parse_mode="HTML")
+        return await query.edit_message_text("Funding wallet not set.")
 
-    if query.data == "back":
-        await query.edit_message_text("Back to main menu. Send /start to reopen menu.")
-        return
-
-# ---------------- commands: sendme / withdraws / balance ----------------
+# ---------------- commands ----------------
 async def sendme(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
     ensure_user(uid)
     if not REAL_FAUCET_ENABLED or FUNDING_KEYPAIR is None:
-        return await update.message.reply_text("Real faucet not enabled.")
+        return await update.message.reply_text("Real faucet disabled.")
     try:
         addr = context.args[0]
     except:
-        return await update.message.reply_text("Usage: /sendme <YourSolanaAddress>")
+        return await update.message.reply_text("Usage: /sendme <address>")
     now = int(time.time())
     last = db["users"][uid].get("last_real", 0)
     if now - last < REAL_FAUCET_COOLDOWN:
-        return await update.message.reply_text(f"Wait {REAL_FAUCET_COOLDOWN - (now-last)}s before requesting again.")
+        return await update.message.reply_text("⏳ Too soon.")
     try:
-        to_pub = PublicKey(addr)
+        pub = PublicKey(addr)
     except:
         return await update.message.reply_text("Invalid address.")
     lamports = int(REAL_FAUCET_AMOUNT_SOL * 1_000_000_000)
-    try:
-        tx = Transaction()
-        tx.add(
-            transfer(
-                TransferParams(
-                    from_pubkey=FUNDING_KEYPAIR.public_key,
-                    to_pubkey=to_pub,
-                    lamports=lamports
-                )
+    tx = Transaction()
+    tx.add(
+        transfer(
+            TransferParams(
+                from_pubkey=FUNDING_KEYPAIR.public_key,
+                to_pubkey=pub,
+                lamports=lamports
             )
         )
+    )
+    try:
         res = SOLANA_CLIENT.send_transaction(tx, FUNDING_KEYPAIR)
-        if res.get("result"):
+        if "result" in res:
             db["users"][uid]["last_real"] = now
             save_data(db)
-            return await update.message.reply_text(f"✅ Sent {REAL_FAUCET_AMOUNT_SOL} SOL to <code>{addr}</code>.\nTx: <code>{res['result']}</code>", parse_mode="HTML")
+            return await update.message.reply_text(f"Sent {REAL_FAUCET_AMOUNT_SOL} SOL!")
         else:
-            return await update.message.reply_text(f"❌ Failed to send SOL. Response: {res}")
+            return await update.message.reply_text("Failed transaction.")
     except Exception as e:
-        log.exception("sendme tx failed")
-        return await update.message.reply_text(f"❌ Error sending: {e}")
+        return await update.message.reply_text(f"Error: {e}")
 
 async def withdraw_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
@@ -302,23 +253,14 @@ async def withdraw_points(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("Usage: /withdraw_points <amount>")
     if amount > db["users"][uid]["points"]:
         return await update.message.reply_text("Not enough points.")
-    # create pending withdrawal and reserve points
     wid = str(uuid.uuid4())
-    req = {
-        "id": wid,
-        "uid": uid,
-        "type": "points",
-        "amount": int(amount),
-        "address": None,
-        "status": "pending",
-        "created_at": int(time.time()),
-        "handled_by": None,
-        "handled_at": None
-    }
-    db["withdrawals"].append(req)
-    db["users"][uid]["points"] -= int(amount)
+    db["withdrawals"].append({
+        "id": wid, "uid": uid, "type": "points", "amount": amount,
+        "status": "pending", "address": None, "created_at": int(time.time())
+    })
+    db["users"][uid]["points"] -= amount
     save_data(db)
-    await update.message.reply_text(f"✅ Withdrawal request recorded (points). Request ID: {wid}. Admin will review.")
+    return await update.message.reply_text(f"Request created: {wid}")
 
 async def withdraw_sol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
@@ -329,187 +271,147 @@ async def withdraw_sol(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         return await update.message.reply_text("Usage: /withdraw_sol <amount> <address>")
     wid = str(uuid.uuid4())
-    req = {
-        "id": wid,
-        "uid": uid,
-        "type": "sol",
-        "amount": float(amount),
-        "address": addr,
-        "status": "pending",
-        "created_at": int(time.time()),
-        "handled_by": None,
-        "handled_at": None
-    }
-    db["withdrawals"].append(req)
+    db["withdrawals"].append({
+        "id": wid, "uid": uid, "type": "sol", "amount": amount,
+        "address": addr, "status": "pending", "created_at": int(time.time())
+    })
     save_data(db)
-    await update.message.reply_text(f"✅ Withdrawal request for {amount} SOL recorded. Request ID: {wid}. Admin will review.\nNote: Admin will instruct about any network fee if needed.")
+    return await update.message.reply_text(f"Request created: {wid}")
 
 async def balance_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         addr = context.args[0]
     except:
-        return await update.message.reply_text("Usage: /balance <SOL_ADDRESS>")
+        return await update.message.reply_text("Usage: /balance <address>")
     try:
         pub = PublicKey(addr)
     except:
         return await update.message.reply_text("Invalid address.")
     res = SOLANA_CLIENT.get_balance(pub)
-    if "result" in res and res["result"]["value"] is not None:
+    if "result" in res:
         lamports = res["result"]["value"]
         sol = lamports / 1_000_000_000
-        await update.message.reply_text(f"Balance for <code>{addr}</code>: {sol} SOL", parse_mode="HTML")
-    else:
-        await update.message.reply_text("Unable to fetch balance.")
+        return await update.message.reply_text(f"{sol} SOL")
+    return await update.message.reply_text("Error getting balance.")
 
-# referral handling
 async def start_with_ref(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
     ensure_user(uid)
     if context.args:
         ref = context.args[0]
-        if ref != uid and ref in db["users"]:
-            if db["users"][uid]["ref_by"] is None:
-                db["users"][uid]["ref_by"] = ref
-                db["users"][ref]["referrals"] = db["users"][ref].get("referrals", 0) + 1
-                db["users"][ref]["points"] = db["users"][ref].get("points", 0) + 20
-                save_data(db)
-                await update.message.reply_text("Referral accepted! Referrer received 20 points.")
+        if ref != uid and ref in db["users"] and db["users"][uid]["ref_by"] is None:
+            db["users"][uid]["ref_by"] = ref
+            db["users"][ref]["referrals"] += 1
+            db["users"][ref]["points"] += 20
+            save_data(db)
+            await update.message.reply_text("Referral added!")
     await start(update, context)
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = (
-        "/start - open menu\n"
-        "/balance <address> - check SOL balance\n"
+    await update.message.reply_text(
+        "/start\n"
+        "/balance <addr>\n"
         "/withdraw_points <amount>\n"
-        "/withdraw_sol <amount> <address>\n"
-        "/sendme <address> - claim real SOL (if enabled)\n"
-        "/help - show this help"
+        "/withdraw_sol <amount> <addr>\n"
+        "/sendme <addr>\n"
+        "/help"
     )
-    await update.message.reply_text(txt)
 
-# ---------------- admin commands ----------------
+# ---------------- admin ----------------
 def require_admin(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        uid = str(update.effective_user.id)
-        if not is_admin(uid):
-            await update.message.reply_text("❌ You are not an admin.")
-            return
+        if not is_admin(str(update.effective_user.id)):
+            return await update.message.reply_text("Not admin.")
         return await func(update, context)
     return wrapper
 
 @require_admin
-async def admin_list_withdrawals(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lines = []
-    for w in db["withdrawals"]:
-        lines.append(f"{w['id']} | {w['type']} | {w['amount']} | {w['status']} | user:{w['uid']}")
-    if not lines:
-        await update.message.reply_text("No withdrawal requests.")
-    else:
-        # split into manageable messages if too long
-        text = "\n".join(lines)
-        await update.message.reply_text(text)
+async def admin_list_withdrawals(update, context):
+    text = "\n".join([f"{w['id']} | {w['type']} | {w['amount']} | {w['status']}" for w in db["withdrawals"]])
+    if not text:
+        text = "No withdrawals."
+    await update.message.reply_text(text)
 
 @require_admin
-async def admin_approve_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def admin_approve_withdraw(update, context):
     try:
         wid = context.args[0]
     except:
-        return await update.message.reply_text("Usage: /approve_withdraw <request_id>")
+        return await update.message.reply_text("Usage: /approve_withdraw <id>")
     for w in db["withdrawals"]:
         if w["id"] == wid and w["status"] == "pending":
             w["status"] = "approved"
-            w["handled_by"] = str(update.effective_user.id)
-            w["handled_at"] = int(time.time())
             save_data(db)
-            # Note: if type == sol and FUNDING_KEYPAIR present, admin can still choose to auto-send using a separate command (not auto here)
-            await update.message.reply_text(f"Approved withdrawal {wid}. Please process payment manually or use a secure admin send command.")
-            return
-    await update.message.reply_text("Request not found or not pending.")
+            return await update.message.reply_text("Approved.")
+    await update.message.reply_text("Not found.")
 
 @require_admin
-async def admin_reject_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def admin_reject_withdraw(update, context):
     try:
         wid = context.args[0]
     except:
-        return await update.message.reply_text("Usage: /reject_withdraw <request_id>")
+        return await update.message.reply_text("Usage: /reject_withdraw <id>")
     for w in db["withdrawals"]:
         if w["id"] == wid and w["status"] == "pending":
             if w["type"] == "points":
-                # refund
                 db["users"][w["uid"]]["points"] += int(w["amount"])
             w["status"] = "rejected"
-            w["handled_by"] = str(update.effective_user.id)
-            w["handled_at"] = int(time.time())
             save_data(db)
-            await update.message.reply_text(f"Rejected withdrawal {wid}. Points refunded if applicable.")
-            return
-    await update.message.reply_text("Request not found or not pending.")
+            return await update.message.reply_text("Rejected.")
+    await update.message.reply_text("Not found.")
 
 @require_admin
-async def admin_setpoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def admin_setpoints(update, context):
     try:
-        target = context.args[0]
-        pts = int(context.args[1])
+        uid, amount = context.args
+        amount = int(amount)
     except:
         return await update.message.reply_text("Usage: /setpoints <user_id> <points>")
-    ensure_user(target)
-    db["users"][target]["points"] = pts
+    ensure_user(uid)
+    db["users"][uid]["points"] = amount
     save_data(db)
-    await update.message.reply_text(f"Set points for {target} -> {pts}")
+    await update.message.reply_text("Done.")
 
 @require_admin
-async def admin_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def admin_broadcast(update, context):
     msg = " ".join(context.args)
-    if not msg:
-        return await update.message.reply_text("Usage: /broadcast <message>")
-    sent = 0
     bot = context.application.bot
-    for uid in list(db["users"].keys()):
+    count = 0
+    for uid in db["users"]:
         try:
             await bot.send_message(int(uid), msg)
-            sent += 1
-        except Exception:
-            continue
-    await update.message.reply_text(f"Broadcast attempted to {sent} users.")
+            count += 1
+        except:
+            pass
+    await update.message.reply_text(f"Sent to {count} users.")
 
 @require_admin
-async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    total_users = len(db["users"])
+async def admin_stats(update, context):
+    total = len(db["users"])
     pending = len([w for w in db["withdrawals"] if w["status"] == "pending"])
-    approved = len([w for w in db["withdrawals"] if w["status"] == "approved"])
-    await update.message.reply_text(f"Users: {total_users}\nPending withdraws: {pending}\nApproved: {approved}")
+    await update.message.reply_text(f"Users: {total}\nPending: {pending}")
 
-# ---------------- auto-earn scheduled job ----------------
-async def auto_earn_job(context: ContextTypes.DEFAULT_TYPE):
+# ---------------- auto earn ----------------
+async def auto_earn_job(context):
     now = int(time.time())
-    changed = False
-    bot = context.application.bot
+    updated = False
     for uid, u in db["users"].items():
-        last_auto = u.get("next_auto_earn", 0) - AUTO_EARN_INTERVAL if u.get("next_auto_earn", 0) else 0
-        # give points every AUTO_EARN_INTERVAL if enough time passed since last_auto_award
         prev = u.get("next_auto_earn", 0)
-        # If next_auto_earn is zero or in the past, award and set next_auto_earn
         if now >= prev:
             u["points"] = u.get("points", 0) + AUTO_EARN_POINTS
             u["next_auto_earn"] = now + AUTO_EARN_INTERVAL
-            changed = True
-            try:
-                await bot.send_message(int(uid), f"✅ Auto-earn: you received {AUTO_EARN_POINTS} points.")
-            except Exception:
-                # ignore delivery errors
-                pass
-    if changed:
+            updated = True
+    if updated:
         save_data(db)
 
-# ---------------- setup & run ----------------
+# ---------------- run bot ----------------
 async def main():
     if not BOT_TOKEN:
-        log.error("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
+        log.error("Missing BOT_TOKEN!")
         return
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # user commands
     app.add_handler(CommandHandler("start", start_with_ref))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("sendme", sendme))
@@ -517,7 +419,6 @@ async def main():
     app.add_handler(CommandHandler("withdraw_sol", withdraw_sol))
     app.add_handler(CommandHandler("balance", balance_cmd))
 
-    # admin commands
     app.add_handler(CommandHandler("list_withdrawals", admin_list_withdrawals))
     app.add_handler(CommandHandler("approve_withdraw", admin_approve_withdraw))
     app.add_handler(CommandHandler("reject_withdraw", admin_reject_withdraw))
@@ -525,10 +426,8 @@ async def main():
     app.add_handler(CommandHandler("broadcast", admin_broadcast))
     app.add_handler(CommandHandler("stats", admin_stats))
 
-    # callback handler for inline buttons
     app.add_handler(CallbackQueryHandler(button))
 
-    # schedule auto-earn: run every AUTO_EARN_INTERVAL seconds
     job_queue = app.job_queue
     job_queue.run_repeating(auto_earn_job, interval=AUTO_EARN_INTERVAL, first=10)
 
