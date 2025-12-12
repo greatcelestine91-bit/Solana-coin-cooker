@@ -407,10 +407,10 @@ async def auto_earn_job(context):
 # ---------------- run bot ----------------
 async def main():
     if not BOT_TOKEN:
-        log.error("Missing BOT_TOKEN!")
+        log.error("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
         return
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4).build()
 
     app.add_handler(CommandHandler("start", start_with_ref))
     app.add_handler(CommandHandler("help", help_cmd))
