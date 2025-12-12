@@ -1,16 +1,16 @@
-import os
+from flask import Flask
 from threading import Thread
 
-def run_keepalive():
-    from flask import Flask
-    app = Flask("keepalive")
+app = Flask(__name__)
 
-    @app.route("/")
-    def home():
-        return "ok"
+@app.route('/')
+def home():
+    return "Bot is running!"
 
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+def run():
+    app.run(host='0.0.0.0', port=8080)
 
-if os.environ.get("RUN_KEEPALIVE", "1") == "1":
-    Thread(target=run_keepalive, daemon=True).start()
+def keep_alive():
+    t = Thread(target=run)
+    t.daemon = True
+    t.start()
