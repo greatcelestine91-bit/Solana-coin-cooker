@@ -1,5 +1,10 @@
-python-telegram-bot==13.15
-flask
-requests
-solders>=0.18.0
 solana>=0.30.0
+solders>=0.18.0
+anchorpy>=0.18.0
+
+Flask
+requests
+python-dotenv
+pytz
+
+pyTelegramBotAPI
