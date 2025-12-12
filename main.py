@@ -405,18 +405,18 @@ async def auto_earn_job(context):
         save_data(db)
 
 # ---------------- run bot ----------------
+# ------------- run bot -------------
 async def main():
     if not BOT_TOKEN:
-        log.error("8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4")
+        log.error("BOT TOKEN missing")
         return
 
-    app = ApplicationBuilder().token(8517816526:AAFe9vBEy0t6dY7vYRsIqATQKVDMY216Cn4).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_with_ref))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("sendme", sendme))
     app.add_handler(CommandHandler("withdraw_points", withdraw_points))
-    app.add_handler(CommandHandler("withdraw_sol", withdraw_sol))
     app.add_handler(CommandHandler("balance", balance_cmd))
 
     app.add_handler(CommandHandler("list_withdrawals", admin_list_withdrawals))
