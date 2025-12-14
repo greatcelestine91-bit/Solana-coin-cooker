@@ -1,5 +1,4 @@
+pyTelegramBotAPI
 flask
-solana==0.29.0
-solders
+solana
 requests
-python-dotenv
