@@ -1,6 +1,7 @@
-python-telegram-bot==20.7
-flask
+python-telegram-bot==13.15
+flask==2.2.5
 requests
 solana==0.30.2
 solders
 base58
+httpx==0.23.3
